@@ -1,0 +1,146 @@
+name: Record Daily Joke
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daily-joke-archive
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: contains(github.event.issue.labels.*.name, 'daily-joke') || contains(github.event.issue.body, 'daily-joke-submission:start')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write issue payload safely
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            fs.writeFileSync('issue.json', JSON.stringify(context.payload.issue, null, 2) + '\n');
+
+      - name: Re-check latest archive state
+        run: git pull --ff-only origin main
+
+      - name: Record joke submission
+        run: node scripts/record-joke.mjs --issue issue.json --result record-joke-result.json
+
+      - name: Read result
+        id: result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('record-joke-result.json', 'utf8'));
+            core.setOutput('accepted', String(result.accepted));
+            core.setOutput('message', result.message);
+            core.setOutput('date', result.date || '');
+
+      - name: Validate data
+        if: steps.result.outputs.accepted == 'true'
+        run: npm run validate:data
+
+      - name: Run tests
+        if: steps.result.outputs.accepted == 'true'
+        run: npm test
+
+      - name: Commit archive update
+        if: steps.result.outputs.accepted == 'true'
+        id: commit
+        run: |
+          git config user.name "The Automated Jester"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/archive.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git add data/archive.json
+          git commit -m "Record daily joke for ${{ steps.result.outputs.date }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build site
+        if: steps.result.outputs.accepted == 'true'
+        run: npm run build
+
+      - name: Configure Pages
+        if: steps.result.outputs.accepted == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: steps.result.outputs.accepted == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        if: steps.result.outputs.accepted == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment and close accepted issue
+        if: steps.result.outputs.accepted == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('record-joke-result.json', 'utf8'));
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `${result.message}\n\nThe department acknowledges your contribution.`
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'completed'
+            });
+
+      - name: Comment on rejected issue
+        if: steps.result.outputs.accepted != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('record-joke-result.json', 'utf8'));
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['joke-rejected']
+            }).catch(() => {});
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `Submission rejected: ${result.message}\n\nThe issue is left open so the filing can be corrected.`
+            });

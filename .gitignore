@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+record-joke-result.json
+issue.json

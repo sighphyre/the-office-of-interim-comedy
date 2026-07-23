@@ -1,0 +1,153 @@
+{
+  "jokes": [
+    {
+      "id": "sql-bar",
+      "type": "setup-punchline",
+      "setup": "A SQL query walks into a bar and approaches two tables.",
+      "punchline": "It asks, \"Can I join you?\""
+    },
+    {
+      "id": "udp",
+      "type": "single",
+      "text": "I would tell you a UDP joke, but you might not get it."
+    },
+    {
+      "id": "cache",
+      "type": "setup-punchline",
+      "setup": "Why did the developer go broke?",
+      "punchline": "Because they used up all their cache."
+    },
+    {
+      "id": "boolean",
+      "type": "single",
+      "text": "There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors."
+    },
+    {
+      "id": "paperclip",
+      "type": "setup-punchline",
+      "setup": "Why did the paperclip get promoted?",
+      "punchline": "It held everything together under pressure."
+    },
+    {
+      "id": "debugging",
+      "type": "single",
+      "text": "Debugging is like being the detective in a mystery where you are also the person who misplaced the evidence."
+    },
+    {
+      "id": "printer",
+      "type": "setup-punchline",
+      "setup": "Why did the printer join standup?",
+      "punchline": "It already had great timing and a paper trail."
+    },
+    {
+      "id": "elevator",
+      "type": "single",
+      "text": "I started an elevator company. It has its ups and downs."
+    },
+    {
+      "id": "spreadsheets",
+      "type": "setup-punchline",
+      "setup": "Why are spreadsheets so calm?",
+      "punchline": "They know how to keep things in order."
+    },
+    {
+      "id": "git-branch",
+      "type": "single",
+      "text": "I tried to make a tree joke in Git, but it went off on a branch."
+    },
+    {
+      "id": "calendar",
+      "type": "setup-punchline",
+      "setup": "Why did the calendar apply for leave?",
+      "punchline": "Its days were numbered."
+    },
+    {
+      "id": "dns",
+      "type": "single",
+      "text": "DNS jokes are hard to explain because everyone resolves them differently."
+    },
+    {
+      "id": "meeting",
+      "type": "setup-punchline",
+      "setup": "Why did the meeting bring a ladder?",
+      "punchline": "It wanted to take things to the next level."
+    },
+    {
+      "id": "keyboard",
+      "type": "single",
+      "text": "My keyboard and I are taking things slowly. There is a lot of space between us."
+    },
+    {
+      "id": "json",
+      "type": "setup-punchline",
+      "setup": "Why was the JSON file invited to every meeting?",
+      "punchline": "It was well structured."
+    },
+    {
+      "id": "rubber-duck",
+      "type": "single",
+      "text": "I explained my bug to a rubber duck and now the duck has opened a ticket."
+    },
+    {
+      "id": "semicolon",
+      "type": "setup-punchline",
+      "setup": "Why did the semicolon skip the party?",
+      "punchline": "It needed closure."
+    },
+    {
+      "id": "button",
+      "type": "single",
+      "text": "The button said it was under pressure, but honestly it was built for it."
+    },
+    {
+      "id": "sandwich",
+      "type": "setup-punchline",
+      "setup": "Why did the sandwich file a support request?",
+      "punchline": "It was stuck between two priorities."
+    },
+    {
+      "id": "constructor",
+      "type": "single",
+      "text": "Object-oriented jokes have class, but only after construction."
+    },
+    {
+      "id": "lamp",
+      "type": "setup-punchline",
+      "setup": "Why did the desk lamp win employee of the month?",
+      "punchline": "It brightened every standup."
+    },
+    {
+      "id": "fork",
+      "type": "single",
+      "text": "I tried to contribute to dinner, but I accidentally forked the recipe."
+    },
+    {
+      "id": "office-chair",
+      "type": "setup-punchline",
+      "setup": "Why did the office chair get a performance bonus?",
+      "punchline": "It supported the whole team."
+    },
+    {
+      "id": "cloud",
+      "type": "single",
+      "text": "I put my joke in the cloud. Now it has availability concerns."
+    },
+    {
+      "id": "cannibal-clown",
+      "type": "setup-punchline",
+      "setup": "Two cannibals ate a clown for lunch.",
+      "punchline": "One asked, \"Does this taste funny to you?\""
+    },
+    {
+      "id": "recursion",
+      "type": "single",
+      "text": "To understand recursion, first understand recursion."
+    },
+    {
+      "id": "approval",
+      "type": "setup-punchline",
+      "setup": "Why did the joke need three approvals?",
+      "punchline": "It was entering the official record."
+    }
+  ]
+}
