@@ -104,13 +104,13 @@ Suggested jokes come from [JokeAPI](https://jokeapi.dev/). The app requests Engl
 blacklistFlags=nsfw,racist,sexist,explicit
 ```
 
-The category field is free text in the UI, but JokeAPI only accepts known category names. Use comma-separated values such as:
+The UI exposes the supported JokeAPI categories as checkboxes, all selected by default:
 
 ```text
 Programming,Misc,Dark,Pun
 ```
 
-`Miscellaneous` is normalized to JokeAPI&apos;s `Misc` category. `Any` is also valid. If the field contains an invalid category, JokeAPI returns an error and the app shows that message.
+If no category is selected, the app falls back to all four.
 
 ## Submission Flow
 

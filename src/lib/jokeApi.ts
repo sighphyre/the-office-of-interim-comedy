@@ -3,7 +3,13 @@ import { sameJoke } from "./jokes";
 
 const endpoint = "https://v2.jokeapi.dev/joke";
 const blacklistFlags = ["nsfw", "racist", "sexist", "explicit"];
-const defaultCategories = "Programming,Misc,Dark,Pun";
+export const jokeApiCategories = [
+  "Programming",
+  "Misc",
+  "Dark",
+  "Pun",
+] as const;
+export type JokeApiCategory = (typeof jokeApiCategories)[number];
 const maxAttempts = 3;
 
 type JokeApiResponse =
@@ -34,21 +40,16 @@ type JokeApiResponse =
       additionalInfo?: string;
     };
 
-export function normalizeCategories(input: string): string {
-  const categories = input
-    .split(",")
-    .map((category) => category.trim())
-    .filter(Boolean)
-    .map((category) =>
-      category.toLowerCase() === "miscellaneous" ? "Misc" : category,
-    );
-
-  return categories.length > 0 ? categories.join(",") : defaultCategories;
+export function normalizeCategories(
+  selectedCategories: JokeApiCategory[],
+): JokeApiCategory[] {
+  return selectedCategories.length > 0
+    ? selectedCategories
+    : [...jokeApiCategories];
 }
 
-export function buildJokeApiUrl(categoryInput: string): string {
-  const categoryPath = normalizeCategories(categoryInput)
-    .split(",")
+export function buildJokeApiUrl(selectedCategories: JokeApiCategory[]): string {
+  const categoryPath = normalizeCategories(selectedCategories)
     .map((category) => encodeURIComponent(category))
     .join(",");
   const params = new URLSearchParams({
@@ -88,14 +89,14 @@ export function jokeFromApiResponse(response: JokeApiResponse): Joke {
 }
 
 export async function fetchSuggestedJoke(
-  categoryInput: string,
+  selectedCategories: JokeApiCategory[],
   archive: ArchiveEntry[],
   fetcher: typeof fetch = fetch,
 ): Promise<Joke> {
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const response = await fetcher(buildJokeApiUrl(categoryInput));
+      const response = await fetcher(buildJokeApiUrl(selectedCategories));
       if (!response.ok) {
         throw new Error(`JokeAPI returned HTTP ${response.status}.`);
       }

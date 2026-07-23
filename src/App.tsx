@@ -11,11 +11,14 @@ import {
   findTodayEntry,
   scheduleStatus,
 } from "./lib/schedule";
-import { fetchSuggestedJoke } from "./lib/jokeApi";
+import {
+  fetchSuggestedJoke,
+  jokeApiCategories,
+  type JokeApiCategory,
+} from "./lib/jokeApi";
 import type { ArchiveEntry, Joke } from "./lib/types";
 
 const textLimit = 500;
-const defaultJokeCategories = "Programming,Misc,Dark,Pun";
 type View = "today" | "schedule" | "archive";
 
 function viewFromHash(): View {
@@ -44,7 +47,9 @@ function App() {
     archiveData.entries as ArchiveEntry[],
     today,
   );
-  const [categoryInput, setCategoryInput] = useState(defaultJokeCategories);
+  const [selectedCategories, setSelectedCategories] = useState<
+    JokeApiCategory[]
+  >([...jokeApiCategories]);
   const [suggestion, setSuggestion] = useState<Joke | null>(null);
   const [selectedJoke, setSelectedJoke] = useState<Joke | null>(null);
   const [suggestionStatus, setSuggestionStatus] = useState<
@@ -70,7 +75,7 @@ function App() {
     setSuggestionError("");
     try {
       const next = await fetchSuggestedJoke(
-        categoryInput,
+        selectedCategories,
         archiveData.entries as ArchiveEntry[],
       );
       setSuggestion(next);
@@ -105,6 +110,14 @@ function App() {
   const canSubmit = Boolean(todayEntry && !todayArchive);
   const issueUrl =
     todayEntry && selectedJoke ? buildIssueUrl(today, selectedJoke) : "";
+
+  const toggleCategory = (category: JokeApiCategory) => {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category],
+    );
+  };
 
   return (
     <div className="app">
@@ -171,17 +184,22 @@ function App() {
             <div className="workbench" aria-label="Joke submission desk">
               <div className="panel">
                 <h2>Suggested Joke</h2>
-                <label>
-                  JokeAPI categories
-                  <input
-                    value={categoryInput}
-                    onChange={(event) => setCategoryInput(event.target.value)}
-                    placeholder="Programming,Misc,Dark,Pun"
-                  />
-                </label>
+                <fieldset className="category-options">
+                  <legend>JokeAPI categories</legend>
+                  {jokeApiCategories.map((category) => (
+                    <label className="checkbox-label" key={category}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => toggleCategory(category)}
+                      />
+                      {category}
+                    </label>
+                  ))}
+                </fieldset>
                 <p className="note">
-                  Comma-separated JokeAPI categories. Use valid names such as
-                  Programming, Misc, Dark, Pun, Spooky, Christmas, or Any.
+                  All selected by default. If none are selected, the app falls
+                  back to all four.
                 </p>
                 <div className="joke-box">
                   {suggestionStatus === "loading" ? (

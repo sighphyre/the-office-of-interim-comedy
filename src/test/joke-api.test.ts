@@ -6,15 +6,17 @@ import {
 } from "../lib/jokeApi";
 
 describe("JokeAPI integration helpers", () => {
-  it("normalizes empty and Miscellaneous category input", () => {
-    expect(normalizeCategories("")).toBe("Programming,Misc,Dark,Pun");
-    expect(normalizeCategories("Programming, Miscellaneous, Pun")).toBe(
-      "Programming,Misc,Pun",
-    );
+  it("defaults to the supported category set when no categories are selected", () => {
+    expect(normalizeCategories([])).toEqual([
+      "Programming",
+      "Misc",
+      "Dark",
+      "Pun",
+    ]);
   });
 
   it("builds an English URL with required blacklist flags", () => {
-    const url = buildJokeApiUrl("Programming,Miscellaneous,Dark,Pun");
+    const url = buildJokeApiUrl(["Programming", "Misc", "Dark", "Pun"]);
     expect(url).toBe(
       "https://v2.jokeapi.dev/joke/Programming,Misc,Dark,Pun?blacklistFlags=nsfw%2Cracist%2Csexist%2Cexplicit&lang=en",
     );
