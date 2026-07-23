@@ -8,6 +8,7 @@ The site shows today&apos;s assigned temporary jester, suggested jokes, a custom
 
 - GitHub Pages hosts the static Vite site.
 - React and TypeScript render configuration from JSON files in `data/`.
+- Joke suggestions are fetched in the browser from JokeAPI.
 - GitHub Issues provide the authenticated submission mechanism.
 - `scripts/record-joke.mjs` validates issue submissions and updates `data/archive.json`.
 - GitHub Actions commits accepted archive updates and deploys Pages in the same workflow.
@@ -52,12 +53,11 @@ Before pushing to GitHub:
 2. If the repository name differs, set `VITE_REPOSITORY_NAME` or `VITE_BASE_PATH` for builds, or update the default in `vite.config.ts`.
 3. Update `data/team.json` with allowed GitHub usernames and display names.
 4. Update `data/schedule.json` with explicit working-day assignments.
-5. Add, remove, or edit local suggestions in `data/suggestions.json`.
-6. Enable GitHub Issues.
-7. Add the `daily-joke` label. The workflow also uses `joke-rejected` when practical.
-8. Enable GitHub Pages and select GitHub Actions as the source.
-9. In repository Actions settings, allow GitHub Actions to read and write repository contents.
-10. Push to `main`.
+5. Enable GitHub Issues.
+6. Add the `daily-joke` label. The workflow also uses `joke-rejected` when practical.
+7. Enable GitHub Pages and select GitHub Actions as the source.
+8. In repository Actions settings, allow GitHub Actions to read and write repository contents.
+9. Push to `main`.
 
 The deployment workflow runs on pushes to `main`. The joke recording workflow runs when a matching issue is opened, validates the authenticated author, updates `data/archive.json`, commits the change, builds, and deploys Pages without relying on a second workflow trigger.
 
@@ -96,6 +96,22 @@ This keeps leave, holidays, and swaps simple. The frontend calculates today usin
 
 `data/archive.json` is written by the Action. It remains sorted by date ascending and permits only one joke per date.
 
+## Joke Suggestions
+
+Suggested jokes come from [JokeAPI](https://jokeapi.dev/). The app requests English jokes and always sends:
+
+```text
+blacklistFlags=nsfw,racist,sexist,explicit
+```
+
+The category field is free text in the UI, but JokeAPI only accepts known category names. Use comma-separated values such as:
+
+```text
+Programming,Misc,Dark,Pun
+```
+
+`Miscellaneous` is normalized to JokeAPI&apos;s `Misc` category. `Any` is also valid. If the field contains an invalid category, JokeAPI returns an error and the app shows that message.
+
 ## Submission Flow
 
 The static app builds a normal pre-filled GitHub issue URL. It includes a deterministic marker block:
@@ -119,7 +135,7 @@ Accepted issues are commented on and closed. Rejected issues receive a clear com
 
 ## Security Assumptions
 
-The frontend is untrusted. It never receives a GitHub token and never calls authenticated GitHub APIs. Joke content is treated as plain text and rendered by React without `dangerouslySetInnerHTML`.
+The frontend is untrusted. It never receives a GitHub token and never calls authenticated GitHub APIs. Joke content, including content fetched from JokeAPI, is treated as plain text and rendered by React without `dangerouslySetInnerHTML`.
 
 Access control is provided by GitHub repository access and workflow validation. If the repository is public, anyone with a GitHub account may be able to open an issue, but unauthorized authors are rejected. For stricter privacy, use a private repository or restrict issue access. GitHub Pages visibility for private repositories depends on your GitHub plan and organization settings.
 

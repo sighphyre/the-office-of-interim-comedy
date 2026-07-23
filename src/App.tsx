@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import archiveData from "../data/archive.json";
 import scheduleData from "../data/schedule.json";
-import suggestionsData from "../data/suggestions.json";
 import teamData from "../data/team.json";
 import { formatDisplayDate, todayInTimezone } from "./lib/dates";
 import { repository } from "./lib/config";
@@ -12,10 +11,11 @@ import {
   findTodayEntry,
   scheduleStatus,
 } from "./lib/schedule";
-import { filterUnusedSuggestions, pickSuggestion } from "./lib/jokes";
+import { fetchSuggestedJoke } from "./lib/jokeApi";
 import type { ArchiveEntry, Joke } from "./lib/types";
 
 const textLimit = 500;
+const defaultJokeCategories = "Programming,Misc,Dark,Pun";
 type View = "today" | "schedule" | "archive";
 
 function viewFromHash(): View {
@@ -44,18 +44,13 @@ function App() {
     archiveData.entries as ArchiveEntry[],
     today,
   );
-  const candidates = useMemo(
-    () =>
-      filterUnusedSuggestions(
-        archiveData.entries as ArchiveEntry[],
-        suggestionsData.jokes as Joke[],
-      ),
-    [],
-  );
-  const [suggestion, setSuggestion] = useState<Joke>(() =>
-    pickSuggestion(candidates),
-  );
-  const [selectedJoke, setSelectedJoke] = useState<Joke>(suggestion);
+  const [categoryInput, setCategoryInput] = useState(defaultJokeCategories);
+  const [suggestion, setSuggestion] = useState<Joke | null>(null);
+  const [selectedJoke, setSelectedJoke] = useState<Joke | null>(null);
+  const [suggestionStatus, setSuggestionStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [suggestionError, setSuggestionError] = useState("");
   const [customText, setCustomText] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -70,6 +65,33 @@ function App() {
     window.history.replaceState(null, "", `#${nextView}`);
   };
 
+  const loadSuggestion = async () => {
+    setSuggestionStatus("loading");
+    setSuggestionError("");
+    try {
+      const next = await fetchSuggestedJoke(
+        categoryInput,
+        archiveData.entries as ArchiveEntry[],
+      );
+      setSuggestion(next);
+      setSelectedJoke(next);
+      setSuggestionStatus("idle");
+    } catch (error) {
+      setSuggestionStatus("error");
+      setSuggestionError(
+        error instanceof Error
+          ? error.message
+          : "Could not fetch a suggested joke.",
+      );
+    }
+  };
+
+  useEffect(() => {
+    void loadSuggestion();
+    // Initial suggestion only. Users can fetch again after changing categories.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const selectCustom = () => {
     const joke: Joke = { type: "single", text: customText.trim() };
     if (!joke.text) {
@@ -80,14 +102,9 @@ function App() {
     setSelectedJoke(joke);
   };
 
-  const giveAnother = () => {
-    const next = pickSuggestion(candidates, suggestion.id);
-    setSuggestion(next);
-    setSelectedJoke(next);
-  };
-
   const canSubmit = Boolean(todayEntry && !todayArchive);
-  const issueUrl = todayEntry ? buildIssueUrl(today, selectedJoke) : "";
+  const issueUrl =
+    todayEntry && selectedJoke ? buildIssueUrl(today, selectedJoke) : "";
 
   return (
     <div className="app">
@@ -154,14 +171,44 @@ function App() {
             <div className="workbench" aria-label="Joke submission desk">
               <div className="panel">
                 <h2>Suggested Joke</h2>
-                <div className="joke-box">{renderJoke(suggestion)}</div>
+                <label>
+                  JokeAPI categories
+                  <input
+                    value={categoryInput}
+                    onChange={(event) => setCategoryInput(event.target.value)}
+                    placeholder="Programming,Misc,Dark,Pun"
+                  />
+                </label>
+                <p className="note">
+                  Comma-separated JokeAPI categories. Use valid names such as
+                  Programming, Misc, Dark, Pun, Spooky, Christmas, or Any.
+                </p>
+                <div className="joke-box">
+                  {suggestionStatus === "loading" ? (
+                    <p>Requesting a joke from the external department...</p>
+                  ) : suggestion ? (
+                    renderJoke(suggestion)
+                  ) : (
+                    <p>No suggested joke has been received yet.</p>
+                  )}
+                </div>
+                {suggestionStatus === "error" ? (
+                  <p className="error" role="alert">
+                    {suggestionError}
+                  </p>
+                ) : null}
                 <div className="button-row">
-                  <button type="button" onClick={giveAnother}>
+                  <button
+                    type="button"
+                    onClick={() => void loadSuggestion()}
+                    disabled={suggestionStatus === "loading"}
+                  >
                     Give me another
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedJoke(suggestion)}
+                    onClick={() => suggestion && setSelectedJoke(suggestion)}
+                    disabled={!suggestion}
                   >
                     Select this suggestion
                   </button>
@@ -171,7 +218,11 @@ function App() {
               <div className="panel submission-panel">
                 <h2>Selected Filing</h2>
                 <div className="joke-box selected">
-                  {renderJoke(selectedJoke)}
+                  {selectedJoke ? (
+                    renderJoke(selectedJoke)
+                  ) : (
+                    <p>No joke selected yet.</p>
+                  )}
                 </div>
                 <div className="custom-inline">
                   <h3>Custom one-liner</h3>
@@ -204,11 +255,11 @@ function App() {
                   complete the official filing.
                 </p>
                 <a
-                  className={`submit-link ${canSubmit ? "" : "disabled"}`}
-                  href={canSubmit ? issueUrl : undefined}
+                  className={`submit-link ${canSubmit && selectedJoke ? "" : "disabled"}`}
+                  href={canSubmit && selectedJoke ? issueUrl : undefined}
                   target="_blank"
                   rel="noreferrer"
-                  aria-disabled={!canSubmit}
+                  aria-disabled={!canSubmit || !selectedJoke}
                 >
                   This is my joke for the day
                 </a>

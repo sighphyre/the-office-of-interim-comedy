@@ -48,7 +48,8 @@ button:hover,
 
 button:focus-visible,
 a:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+input:focus-visible {
   outline: 3px solid #2e6f95;
   outline-offset: 3px;
 }
@@ -202,6 +203,16 @@ textarea {
   min-height: 112px;
   padding: 0.75rem;
   resize: vertical;
+}
+
+input {
+  border: 1px solid #6f766c;
+  border-radius: 6px;
+  color: #1e2320;
+  font: inherit;
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+  width: 100%;
 }
 
 .custom-inline {
