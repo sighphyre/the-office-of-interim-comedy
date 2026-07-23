@@ -83,8 +83,16 @@ nav {
 }
 
 nav a {
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-weight: 800;
-  text-decoration-thickness: 2px;
+  padding: 0.45rem 0.75rem;
+  text-decoration: none;
+}
+
+nav a.active {
+  background: #1e2320;
+  color: #fffdf7;
 }
 
 .eyebrow {
@@ -104,6 +112,10 @@ nav a {
   grid-template-columns: 1fr auto;
   margin: 1.25rem 0;
   padding: 1.25rem;
+}
+
+.view {
+  margin-top: 1.25rem;
 }
 
 .today-panel h2,
@@ -138,7 +150,7 @@ nav a {
 .workbench {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .panel,
@@ -176,26 +188,6 @@ nav a {
   gap: 0.6rem;
 }
 
-.tabs {
-  background: #e9e1cf;
-  border-radius: 8px;
-  display: grid;
-  gap: 0.4rem;
-  grid-template-columns: 1fr 1fr;
-  margin-bottom: 0.75rem;
-  padding: 0.35rem;
-}
-
-.tabs button {
-  background: transparent;
-  border-color: transparent;
-}
-
-.tabs button.active {
-  background: #fffdf7;
-  border-color: #1e2320;
-}
-
 label {
   display: grid;
   font-weight: 800;
@@ -212,9 +204,14 @@ textarea {
   resize: vertical;
 }
 
-.field-grid {
-  display: grid;
-  gap: 0.75rem;
+.custom-inline {
+  border-top: 1px solid #d8d2c4;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.custom-inline h3 {
+  margin: 0 0 0.25rem;
 }
 
 .counter,
