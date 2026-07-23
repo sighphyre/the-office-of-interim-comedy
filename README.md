@@ -48,7 +48,7 @@ npm run format
 
 Before pushing to GitHub:
 
-1. Replace `YOUR_ORG` and `YOUR_REPOSITORY` in `src/lib/config.ts`.
+1. Confirm `src/lib/config.ts` points at the GitHub repository.
 2. If the repository name differs, set `VITE_REPOSITORY_NAME` or `VITE_BASE_PATH` for builds, or update the default in `vite.config.ts`.
 3. Update `data/team.json` with allowed GitHub usernames and display names.
 4. Update `data/schedule.json` with explicit working-day assignments.

@@ -1,6 +1,6 @@
 export const repository = {
-  owner: "YOUR_ORG",
-  name: "YOUR_REPOSITORY",
+  owner: "sighphyre",
+  name: "the-office-of-interim-comedy",
 };
 
 export const issueLabel = "daily-joke";

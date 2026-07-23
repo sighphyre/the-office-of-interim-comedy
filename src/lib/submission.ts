@@ -32,9 +32,3 @@ export function buildIssueUrl(date: string, joke: Joke): string {
   });
   return `https://github.com/${repository.owner}/${repository.name}/issues/new?${params.toString()}`;
 }
-
-export function repositoryConfigured(): boolean {
-  return (
-    repository.owner !== "YOUR_ORG" && repository.name !== "YOUR_REPOSITORY"
-  );
-}

@@ -5,7 +5,7 @@ import suggestionsData from "../data/suggestions.json";
 import teamData from "../data/team.json";
 import { formatDisplayDate, todayInTimezone } from "./lib/dates";
 import { repository } from "./lib/config";
-import { buildIssueUrl, repositoryConfigured } from "./lib/submission";
+import { buildIssueUrl } from "./lib/submission";
 import {
   archiveForDate,
   findMember,
@@ -86,7 +86,7 @@ function App() {
     setSelectedJoke(next);
   };
 
-  const canSubmit = todayEntry && !todayArchive && repositoryConfigured();
+  const canSubmit = Boolean(todayEntry && !todayArchive);
   const issueUrl = todayEntry ? buildIssueUrl(today, selectedJoke) : "";
 
   return (
@@ -199,13 +199,6 @@ function App() {
                     Select custom joke
                   </button>
                 </div>
-                {!repositoryConfigured() ? (
-                  <p className="error">
-                    Replace the repository placeholders in{" "}
-                    <code>src/lib/config.ts</code> before submissions can open
-                    the correct GitHub issue page.
-                  </p>
-                ) : null}
                 <p className="note">
                   GitHub will open in a new page. Submit the issue there to
                   complete the official filing.
@@ -279,15 +272,11 @@ function App() {
                       <p className="eyebrow">{formatDisplayDate(entry.date)}</p>
                       <h3>{entry.name}</h3>
                     </div>
-                    {repositoryConfigured() ? (
-                      <a
-                        href={`https://github.com/${repository.owner}/${repository.name}/issues/${entry.issueNumber}`}
-                      >
-                        Issue #{entry.issueNumber}
-                      </a>
-                    ) : (
-                      <span>Issue #{entry.issueNumber}</span>
-                    )}
+                    <a
+                      href={`https://github.com/${repository.owner}/${repository.name}/issues/${entry.issueNumber}`}
+                    >
+                      Issue #{entry.issueNumber}
+                    </a>
                   </header>
                   <div className="joke-box">{renderJoke(entry)}</div>
                 </article>
