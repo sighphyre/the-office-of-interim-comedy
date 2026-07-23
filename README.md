@@ -2,19 +2,15 @@
 
 A small static web application for keeping a daily standup joke tradition alive while the usual team joker is away.
 
-The site shows today&apos;s assigned temporary jester, suggested jokes, a custom joke form, the explicit schedule, and the complete archive. Submissions are authenticated through GitHub Issues and processed by GitHub Actions. There is no backend server, no external database, no OAuth app, and no browser-exposed token.
-
 ## Architecture
 
-- GitHub Pages hosts the static Vite site.
-- React and TypeScript render configuration from JSON files in `data/`.
-- Joke suggestions are fetched in the browser from JokeAPI.
-- GitHub Issues provide the authenticated submission mechanism.
-- `scripts/record-joke.mjs` validates issue submissions and updates `data/archive.json`.
-- GitHub Actions commits accepted archive updates and deploys Pages in the same workflow.
-- `scripts/validate-data.mjs` checks configuration before tests and builds.
+Okay brace yourself because this is designed with a very particular goal in mind. Computers are horrible, horrible things and a wise person always seeks to manage as few computers as possible. Since the cloud is just someone else's computer, we can use Github to do a bunch of slightly insane things to build a persistent website without having to manage pesky things like CDNs, or backends or SQL servers.
 
-GitHub Issues are used instead of direct browser writes because the browser is untrusted. The app only opens a pre-filled issue URL. GitHub supplies the authenticated submitter as `github.event.issue.user.login`, and the workflow trusts that value instead of any name, email, or username written in the issue body.
+This project works by hoisting a self mutating repository on Github, effectively each layer in a traditional architecture is replaced by some Github component. The repository exposes a Github page to serve a static frontend. The frontend allows the user to either choose a random joke or select one of their own, traditionally a web server would accept a request from this static page. In this architecture, instead we pipe this directly back to a Github issue describing the joke details. Authentication is performed by piggybacking on Github's identity provider - simply put, you're just using the browser to create an issue. Validation and backend handling are performed by Github actions. Most of the core "backend" logic lives in the scripts folder. CI reads the issues tagged with a label and confirms that the submitter is one of the allow listed users marked in the "database". Which takes us to the last layer - persistence is achieved by just writing to the files contained in the data folder. A git repository is inherently persistent, why try improve on perfection?
+
+Most of this code is built with Github Copilot because I thought it would be funny to also leverage Github tech to write the code. Sadly I ran out of tokens so I had to hand roll some of this like some kind of peasant. So if you go dig into the code, good luck, it's probably the worst combination of LLM and human-possessed-by-madness.
+
+If you've made it this far into the README, congratulations, you now have the intellectual equivalent of a family of racoons living in your hindbrain. I recommend therapy.
 
 ## Local Development
 
@@ -45,22 +41,6 @@ Format files:
 npm run format
 ```
 
-## Repository Setup
-
-Before pushing to GitHub:
-
-1. Confirm `src/lib/config.ts` points at the GitHub repository.
-2. If the repository name differs, set `VITE_REPOSITORY_NAME` or `VITE_BASE_PATH` for builds, or update the default in `vite.config.ts`.
-3. Update `data/team.json` with allowed GitHub usernames and display names.
-4. Update `data/schedule.json` with explicit working-day assignments.
-5. Enable GitHub Issues.
-6. Add the `daily-joke` label. The workflow also uses `joke-rejected` when practical.
-7. Enable GitHub Pages and select GitHub Actions as the source.
-8. In repository Actions settings, allow GitHub Actions to read and write repository contents.
-9. Push to `main`.
-
-The deployment workflow runs on pushes to `main`. The joke recording workflow runs when a matching issue is opened, validates the authenticated author, updates `data/archive.json`, commits the change, builds, and deploys Pages without relying on a second workflow trigger.
-
 ## Configuration
 
 `data/team.json` uses GitHub usernames as authoritative identity:
@@ -75,8 +55,8 @@ The deployment workflow runs on pushes to `main`. The joke recording workflow ru
   ]
 }
 ```
+Adding users to this list allows issues submitted by them to contribute to the joke archive. Github users not on this list will have their issue automatically closed and mocked by the automation.
 
-Do not add employee email addresses. They are not needed and should not be exposed in a static site.
 
 `data/schedule.json` uses explicit dates:
 
@@ -92,65 +72,15 @@ Do not add employee email addresses. They are not needed and should not be expos
 }
 ```
 
-This keeps leave, holidays, and swaps simple. The frontend calculates today using the configured timezone with `Intl.DateTimeFormat`.
+You can modify this list to alter the schedule or shuffle users around.
 
-`data/archive.json` is written by the Action. It remains sorted by date ascending and permits only one joke per date.
+`data/archive.json` is written by the Action. It remains sorted by date ascending and permits only one joke per date. This should only be edited when something goes wrong, typically this is entirely managed by the repository itself.
 
-## Joke Suggestions
 
-Suggested jokes come from [JokeAPI](https://jokeapi.dev/). The app requests English jokes and always sends:
+## Contributing
 
-```text
-blacklistFlags=nsfw,racist,sexist,explicit
-```
+Don't do that. Spend time with your loved ones, learn to cook, pet a seal. I dunno, man, I'm not telling you how to live your life but there's definitely more productive ways to spend your time.
 
-The UI exposes the supported JokeAPI categories as checkboxes, all selected by default:
+## License
 
-```text
-Programming,Misc,Dark,Pun
-```
-
-If no category is selected, the app falls back to all four.
-
-## Submission Flow
-
-The static app builds a normal pre-filled GitHub issue URL. It includes a deterministic marker block:
-
-```md
-<!-- daily-joke-submission:start -->
-<!-- version:1 -->
-<!-- date:2026-07-27 -->
-<!-- type:single -->
-
-### Text
-
-The joke text.
-
-<!-- daily-joke-submission:end -->
-```
-
-The Action rejects submissions when the author is unknown, the author is not assigned, the date is invalid or unscheduled, a date is duplicated, fields are missing or too long, markers are malformed, the format version is unsupported, or raw HTML/script-like content is submitted.
-
-Accepted issues are commented on and closed. Rejected issues receive a clear comment, get `joke-rejected` when possible, and remain open so the filing can be corrected.
-
-## Security Assumptions
-
-The frontend is untrusted. It never receives a GitHub token and never calls authenticated GitHub APIs. Joke content, including content fetched from JokeAPI, is treated as plain text and rendered by React without `dangerouslySetInnerHTML`.
-
-Access control is provided by GitHub repository access and workflow validation. If the repository is public, anyone with a GitHub account may be able to open an issue, but unauthorized authors are rejected. For stricter privacy, use a private repository or restrict issue access. GitHub Pages visibility for private repositories depends on your GitHub plan and organization settings.
-
-The only runtime secret is the automatically generated `GITHUB_TOKEN` in GitHub Actions.
-
-## Printing
-
-Open the Archive section and choose **Print archive**. The print stylesheet hides navigation, forms, buttons, controls, and schedule clutter so the collected jokes can be saved as PDF or printed.
-
-## Troubleshooting
-
-- Issue opens in the wrong repository: update `src/lib/config.ts`.
-- Site assets 404 on Pages: confirm the Vite base path in `vite.config.ts` matches the repository name or set `VITE_BASE_PATH`.
-- Submission is rejected as unauthorized: check `data/team.json` against the submitter&apos;s GitHub username.
-- Submission is rejected as not assigned: check `data/schedule.json` for the submitted date.
-- Duplicate date rejected: `data/archive.json` already has an entry for that date.
-- Workflow cannot push: allow Actions read/write permissions in repository settings.
-- Pages does not deploy: enable GitHub Pages with GitHub Actions as the source.
+You should learn nothing from this. This is a collection of terrible ideas. If for whatever reason you're driven to derive inspiration from this project, please see the [license](LICENSE.md) before doing so.
