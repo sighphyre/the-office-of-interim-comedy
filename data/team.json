@@ -1,20 +1,8 @@
 {
   "members": [
     {
-      "github": "alice-gh",
-      "name": "Alice"
-    },
-    {
-      "github": "bob-gh",
-      "name": "Bob"
-    },
-    {
-      "github": "si-gh",
-      "name": "Si"
-    },
-    {
-      "github": "charlie-gh",
-      "name": "Charlie"
+      "github": "sighphyre",
+      "name": "Simon Hornby"
     }
   ]
 }
