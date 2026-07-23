@@ -1,13 +1,4 @@
 {
   "entries": [
-    {
-      "date": "2026-07-23",
-      "github": "sighphyre",
-      "name": "Simon Hornby",
-      "type": "single",
-      "issueNumber": 3,
-      "recordedAt": "2026-07-23T18:49:31.096Z",
-      "text": "There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors."
-    }
   ]
 }
