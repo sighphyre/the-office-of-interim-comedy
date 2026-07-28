@@ -55,8 +55,8 @@ npm run format
   ]
 }
 ```
-Adding users to this list allows issues submitted by them to contribute to the joke archive. Github users not on this list will have their issue automatically closed and mocked by the automation.
 
+Adding users to this list allows issues submitted by them to contribute to the joke archive. Github users not on this list will have their issue automatically closed and mocked by the automation.
 
 `data/schedule.json` uses explicit dates:
 
@@ -76,6 +76,19 @@ You can modify this list to alter the schedule or shuffle users around.
 
 `data/archive.json` is written by the Action. It remains sorted by date ascending and permits only one joke per date. This should only be edited when something goes wrong, typically this is entirely managed by the repository itself.
 
+## Submission Protocol
+
+The app can optionally include a next temporary jester when submitting today&apos;s joke. The dropdown is populated from `data/team.json`, displays each member&apos;s `name`, and submits the member&apos;s `github` value.
+
+If nobody is selected, the workflow does not change the schedule.
+
+Issue format version `2` supports this optional machine-readable marker:
+
+```md
+<!-- next-github:sighphyre -->
+```
+
+When present, `scripts/record-joke.mjs` updates the next configured schedule entry after the submitted date. It does not compute a calendar rotation, so weekends, leave days, and holidays still follow the explicit schedule file.
 
 ## Contributing
 

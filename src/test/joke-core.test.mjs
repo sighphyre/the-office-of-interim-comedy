@@ -9,6 +9,7 @@ import {
   sortArchiveEntries,
   todayInTimezone,
   unusedSuggestions,
+  updateNextScheduleEntry,
   validateSubmission,
 } from "../../scripts/joke-core.mjs";
 
@@ -38,15 +39,17 @@ function issue(body, login = "alice-gh", number = 42) {
   };
 }
 
-function bodyFor(joke, date = "2026-07-27") {
+function bodyFor(joke, date = "2026-07-27", nextGithub = "") {
   const content =
     joke.type === "single"
       ? `### Text\n\n${joke.text}`
       : `### Setup\n\n${joke.setup}\n\n### Punchline\n\n${joke.punchline}`;
+  const nextLine = nextGithub ? `<!-- next-github:${nextGithub} -->\n` : "";
   return `<!-- daily-joke-submission:start -->
-<!-- version:1 -->
+<!-- version:${nextGithub ? "2" : "1"} -->
 <!-- date:${date} -->
 <!-- type:${joke.type} -->
+${nextLine}
 
 ${content}
 
@@ -80,6 +83,7 @@ describe("submission parsing", () => {
       text: "A <boulder> is just a committed pebble.",
       setup: "",
       punchline: "",
+      nextGithub: "",
     });
   });
 
@@ -110,6 +114,20 @@ describe("submission parsing", () => {
       bodyFor({ type: "single", text: "**bold** [link](x) `code`" }),
     );
     expect(parsed.text).toBe("**bold** [link](x) `code`");
+  });
+
+  it("parses a version 2 next jester selection", () => {
+    const parsed = parseSubmissionBody(
+      bodyFor(
+        { type: "single", text: "Filed with a rota update." },
+        "2026-07-27",
+        "bob-gh",
+      ),
+    );
+    expect(parsed).toMatchObject({
+      version: "2",
+      nextGithub: "bob-gh",
+    });
   });
 });
 
@@ -201,6 +219,46 @@ describe("submission validation", () => {
       accepted: false,
     });
   });
+
+  it("accepts a valid next jester from the team list", () => {
+    const submission = parseSubmissionBody(
+      bodyFor({ type: "single", text: "Next please." }, "2026-07-27", "bob-gh"),
+    );
+    expect(
+      validateSubmission({
+        issue: issue("body"),
+        submission,
+        team,
+        schedule,
+        archive: emptyArchive,
+      }),
+    ).toMatchObject({
+      accepted: true,
+      nextScheduleEntry: { date: "2026-07-28" },
+      nextTeamMember: { github: "bob-gh" },
+    });
+  });
+
+  it("rejects an unknown next jester", () => {
+    const submission = parseSubmissionBody(
+      bodyFor(
+        { type: "single", text: "Next please." },
+        "2026-07-27",
+        "stranger-gh",
+      ),
+    );
+    expect(
+      validateSubmission({
+        issue: issue("body"),
+        submission,
+        team,
+        schedule,
+        archive: emptyArchive,
+      }),
+    ).toMatchObject({
+      accepted: false,
+    });
+  });
 });
 
 describe("archive and suggestions", () => {
@@ -222,6 +280,22 @@ describe("archive and suggestions", () => {
         (joke) => joke.id,
       ),
     ).toEqual(["fresh"]);
+  });
+
+  it("updates the next configured schedule entry", () => {
+    const result = updateNextScheduleEntry(
+      schedule,
+      { date: "2026-07-28", github: "bob-gh" },
+      "alice-gh",
+    );
+    expect(result).toMatchObject({
+      changed: true,
+      nextDate: "2026-07-28",
+    });
+    expect(result.schedule.entries.at(-1)).toEqual({
+      date: "2026-07-28",
+      github: "alice-gh",
+    });
   });
 
   it("does not modify the archive after rejection", async () => {
@@ -261,5 +335,56 @@ describe("archive and suggestions", () => {
       accepted: false,
     });
     expect(JSON.parse(await readFile(archivePath, "utf8"))).toEqual(archive);
+    expect(JSON.parse(await readFile(schedulePath, "utf8"))).toEqual(schedule);
+  });
+
+  it("updates the archive and next schedule entry after acceptance", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "interim-comedy-"));
+    const archivePath = join(dir, "archive.json");
+    const issuePath = join(dir, "issue.json");
+    const resultPath = join(dir, "result.json");
+    const teamPath = join(dir, "team.json");
+    const schedulePath = join(dir, "schedule.json");
+    const archive = { entries: [] };
+
+    await Promise.all([
+      writeFile(archivePath, `${JSON.stringify(archive, null, 2)}\n`),
+      writeFile(teamPath, `${JSON.stringify(team, null, 2)}\n`),
+      writeFile(schedulePath, `${JSON.stringify(schedule, null, 2)}\n`),
+      writeFile(
+        issuePath,
+        `${JSON.stringify(issue(bodyFor({ type: "single", text: "Accepted." }, "2026-07-27", "alice-gh")), null, 2)}\n`,
+      ),
+    ]);
+
+    await execFileAsync("node", [
+      "scripts/record-joke.mjs",
+      "--issue",
+      issuePath,
+      "--result",
+      resultPath,
+      "--archive",
+      archivePath,
+      "--team",
+      teamPath,
+      "--schedule",
+      schedulePath,
+    ]);
+
+    expect(JSON.parse(await readFile(resultPath, "utf8"))).toMatchObject({
+      accepted: true,
+      nextScheduleUpdated: true,
+      nextDate: "2026-07-28",
+      nextGithub: "alice-gh",
+    });
+    expect(
+      JSON.parse(await readFile(archivePath, "utf8")).entries,
+    ).toHaveLength(1);
+    expect(
+      JSON.parse(await readFile(schedulePath, "utf8")).entries.at(-1),
+    ).toEqual({
+      date: "2026-07-28",
+      github: "alice-gh",
+    });
   });
 });

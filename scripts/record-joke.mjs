@@ -6,6 +6,7 @@ import {
   parseSubmissionBody,
   readJson,
   sortArchiveEntries,
+  updateNextScheduleEntry,
   validateSubmission,
 } from "./joke-core.mjs";
 
@@ -25,10 +26,10 @@ async function writeResult(result) {
   await writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`);
 }
 
-async function writeArchiveAtomic(path, archive) {
+async function writeJsonAtomic(path, value) {
   const destination = resolve(path);
   const temp = `${destination}.tmp-${process.pid}`;
-  await writeFile(temp, `${JSON.stringify(archive, null, 2)}\n`);
+  await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`);
   await rename(temp, destination);
 }
 
@@ -75,12 +76,25 @@ try {
   const updatedArchive = {
     entries: sortArchiveEntries([...archive.entries, entry]),
   };
-  await writeArchiveAtomic(archivePath, updatedArchive);
+  const scheduleUpdate = updateNextScheduleEntry(
+    schedule,
+    validation.nextScheduleEntry,
+    submission.nextGithub,
+  );
+
+  await writeJsonAtomic(archivePath, updatedArchive);
+  if (scheduleUpdate.changed) {
+    await writeJsonAtomic(schedulePath, scheduleUpdate.schedule);
+  }
+
   await writeResult({
     accepted: true,
     message: validation.message,
     date: submission.date,
     issueNumber: issue.number,
+    nextScheduleUpdated: scheduleUpdate.changed,
+    nextDate: scheduleUpdate.nextDate,
+    nextGithub: submission.nextGithub || null,
   });
 } catch (error) {
   await writeResult({

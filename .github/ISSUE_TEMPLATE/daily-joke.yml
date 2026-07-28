@@ -33,6 +33,14 @@ body:
       description: Prefer using the app so the machine-readable block is created correctly.
     validations:
       required: true
+  - type: input
+    id: next-jester
+    attributes:
+      label: Optional next temporary jester
+      description: GitHub username from data/team.json. Prefer using the app so the machine-readable next-github marker is created correctly.
+      placeholder: "sighphyre"
+    validations:
+      required: false
   - type: checkboxes
     id: confirmation
     attributes:

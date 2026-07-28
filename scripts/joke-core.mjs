@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
-export const FORMAT_VERSION = "1";
+export const FORMAT_VERSION = "2";
+export const SUPPORTED_FORMAT_VERSIONS = new Set(["1", "2"]);
 export const MAX_TEXT = 500;
 export const MAX_SETUP = 300;
 export const MAX_PUNCHLINE = 300;
@@ -60,7 +61,9 @@ export function parseSubmissionBody(body) {
   const sections = {};
 
   for (const line of lines) {
-    const meta = line.match(/^<!--\s*(date|type|version):([^<>]*)\s*-->$/);
+    const meta = line.match(
+      /^<!--\s*(date|type|version|next-github):([^<>]*)\s*-->$/,
+    );
     if (meta) {
       metadata[meta[1]] = meta[2].trim();
       section = null;
@@ -86,14 +89,18 @@ export function parseSubmissionBody(body) {
     text: trimSection("text"),
     setup: trimSection("setup"),
     punchline: trimSection("punchline"),
+    nextGithub: metadata["next-github"]?.trim() ?? "",
   };
 
   return parsed;
 }
 
 export function validateJokeShape(submission) {
-  if (submission.version !== FORMAT_VERSION) {
+  if (!SUPPORTED_FORMAT_VERSIONS.has(submission.version)) {
     return "Unsupported daily joke format version.";
+  }
+  if (submission.nextGithub && submission.version !== FORMAT_VERSION) {
+    return "Setting the next temporary jester requires format version 2.";
   }
   if (!isValidDateString(submission.date ?? "")) {
     return "The submitted date is missing or invalid.";
@@ -194,10 +201,65 @@ export function validateSubmission({
     };
   }
 
+  let nextScheduleEntry = null;
+  let nextTeamMember = null;
+  if (submission.nextGithub) {
+    nextTeamMember = team.members.find(
+      (member) => member.github === submission.nextGithub,
+    );
+    if (!nextTeamMember) {
+      return {
+        accepted: false,
+        message: "The requested next temporary jester is not in the team list.",
+      };
+    }
+
+    nextScheduleEntry =
+      schedule.entries
+        .filter((entry) => entry.date > submission.date)
+        .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
+    if (!nextScheduleEntry) {
+      return {
+        accepted: false,
+        message: "There is no later schedule entry to update.",
+      };
+    }
+  }
+
   return {
     accepted: true,
     message: "The sacred archive has been updated.",
     teamMember,
+    nextScheduleEntry,
+    nextTeamMember,
+  };
+}
+
+export function updateNextScheduleEntry(
+  schedule,
+  nextScheduleEntry,
+  nextGithub,
+) {
+  if (!nextScheduleEntry || !nextGithub) {
+    return {
+      schedule,
+      changed: false,
+      nextDate: null,
+    };
+  }
+
+  let changed = false;
+  const entries = schedule.entries.map((entry) => {
+    if (entry.date !== nextScheduleEntry.date) return entry;
+    if (entry.github === nextGithub) return entry;
+    changed = true;
+    return { ...entry, github: nextGithub };
+  });
+
+  return {
+    schedule: { ...schedule, entries },
+    changed,
+    nextDate: nextScheduleEntry.date,
   };
 }
 

@@ -75,11 +75,11 @@ jobs:
         run: |
           git config user.name "The Automated Jester"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- data/archive.json; then
+          if git diff --quiet -- data/archive.json data/schedule.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git add data/archive.json
+          git add data/archive.json data/schedule.json
           git commit -m "Record daily joke for ${{ steps.result.outputs.date }}"
           git pull --rebase origin main
           git push origin HEAD:main
