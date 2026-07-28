@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {
+  isJokeDay,
   readJson,
   isValidDateString,
   validateJokeShape,
@@ -61,6 +62,10 @@ unique(
 for (const entry of schedule.entries) {
   if (!isValidDateString(entry.date))
     errors.push(`Invalid schedule date: ${entry.date}`);
+  if (!isJokeDay(entry.date))
+    errors.push(
+      `Schedule date is outside the Tuesday-Friday joke window: ${entry.date}`,
+    );
   if (!teamMembers.has(entry.github))
     errors.push(`Schedule member not in team: ${entry.github}`);
 }

@@ -72,7 +72,7 @@ Adding users to this list allows issues submitted by them to contribute to the j
 }
 ```
 
-You can modify this list to alter the schedule or shuffle users around.
+You can modify this list to alter the schedule or shuffle users around. Joke of the day is active Tuesday through Friday only, so schedule entries on Mondays or weekends will fail validation.
 
 `data/archive.json` is written by the Action. It remains sorted by date ascending and permits only one joke per date. This should only be edited when something goes wrong, typically this is entirely managed by the repository itself.
 
@@ -88,7 +88,7 @@ Issue format version `2` supports this optional machine-readable marker:
 <!-- next-github:sighphyre -->
 ```
 
-When present, `scripts/record-joke.mjs` updates the next configured schedule entry after the submitted date. It does not compute a calendar rotation, so weekends, leave days, and holidays still follow the explicit schedule file.
+When present, `scripts/record-joke.mjs` updates the next configured Tuesday-Friday schedule entry after the submitted date. It does not compute a calendar rotation, so leave days and holidays still follow the explicit schedule file.
 
 ## Contributing
 

@@ -24,8 +24,8 @@ const team = {
 const schedule = {
   timezone: "Africa/Johannesburg",
   entries: [
-    { date: "2026-07-27", github: "alice-gh" },
-    { date: "2026-07-28", github: "bob-gh" },
+    { date: "2026-07-28", github: "alice-gh" },
+    { date: "2026-07-29", github: "bob-gh" },
   ],
 };
 const emptyArchive = { entries: [] };
@@ -39,7 +39,7 @@ function issue(body, login = "alice-gh", number = 42) {
   };
 }
 
-function bodyFor(joke, date = "2026-07-27", nextGithub = "") {
+function bodyFor(joke, date = "2026-07-28", nextGithub = "") {
   const content =
     joke.type === "single"
       ? `### Text\n\n${joke.text}`
@@ -78,7 +78,7 @@ describe("submission parsing", () => {
       ),
     ).toEqual({
       version: "1",
-      date: "2026-07-27",
+      date: "2026-07-28",
       type: "single",
       text: "A <boulder> is just a committed pebble.",
       setup: "",
@@ -120,7 +120,7 @@ describe("submission parsing", () => {
     const parsed = parseSubmissionBody(
       bodyFor(
         { type: "single", text: "Filed with a rota update." },
-        "2026-07-27",
+        "2026-07-28",
         "bob-gh",
       ),
     );
@@ -187,7 +187,7 @@ describe("submission validation", () => {
     );
     const archive = {
       entries: [
-        { date: "2026-07-27", github: "alice-gh", type: "single", text: "Old" },
+        { date: "2026-07-28", github: "alice-gh", type: "single", text: "Old" },
       ],
     };
     expect(
@@ -222,7 +222,7 @@ describe("submission validation", () => {
 
   it("accepts a valid next jester from the team list", () => {
     const submission = parseSubmissionBody(
-      bodyFor({ type: "single", text: "Next please." }, "2026-07-27", "bob-gh"),
+      bodyFor({ type: "single", text: "Next please." }, "2026-07-28", "bob-gh"),
     );
     expect(
       validateSubmission({
@@ -234,8 +234,30 @@ describe("submission validation", () => {
       }),
     ).toMatchObject({
       accepted: true,
-      nextScheduleEntry: { date: "2026-07-28" },
+      nextScheduleEntry: { date: "2026-07-29" },
       nextTeamMember: { github: "bob-gh" },
+    });
+  });
+
+  it("rejects Monday submissions", () => {
+    const mondaySchedule = {
+      timezone: "Africa/Johannesburg",
+      entries: [{ date: "2026-07-27", github: "alice-gh" }],
+    };
+    const submission = parseSubmissionBody(
+      bodyFor({ type: "single", text: "Monday filing." }, "2026-07-27"),
+    );
+    expect(
+      validateSubmission({
+        issue: issue("body"),
+        submission,
+        team,
+        schedule: mondaySchedule,
+        archive: emptyArchive,
+      }),
+    ).toMatchObject({
+      accepted: false,
+      message: "Joke of the day is only active Tuesday through Friday.",
     });
   });
 
@@ -243,7 +265,7 @@ describe("submission validation", () => {
     const submission = parseSubmissionBody(
       bodyFor(
         { type: "single", text: "Next please." },
-        "2026-07-27",
+        "2026-07-28",
         "stranger-gh",
       ),
     );
@@ -264,10 +286,10 @@ describe("submission validation", () => {
 describe("archive and suggestions", () => {
   it("sorts archive entries by date", () => {
     expect(
-      sortArchiveEntries([{ date: "2026-07-28" }, { date: "2026-07-27" }]).map(
+      sortArchiveEntries([{ date: "2026-07-29" }, { date: "2026-07-28" }]).map(
         (entry) => entry.date,
       ),
-    ).toEqual(["2026-07-27", "2026-07-28"]);
+    ).toEqual(["2026-07-28", "2026-07-29"]);
   });
 
   it("prefers unused suggestions", () => {
@@ -285,16 +307,46 @@ describe("archive and suggestions", () => {
   it("updates the next configured schedule entry", () => {
     const result = updateNextScheduleEntry(
       schedule,
-      { date: "2026-07-28", github: "bob-gh" },
+      { date: "2026-07-29", github: "bob-gh" },
       "alice-gh",
     );
     expect(result).toMatchObject({
       changed: true,
-      nextDate: "2026-07-28",
+      nextDate: "2026-07-29",
     });
     expect(result.schedule.entries.at(-1)).toEqual({
-      date: "2026-07-28",
+      date: "2026-07-29",
       github: "alice-gh",
+    });
+  });
+
+  it("skips Monday when finding the next schedule entry", () => {
+    const scheduleWithMonday = {
+      timezone: "Africa/Johannesburg",
+      entries: [
+        { date: "2026-07-31", github: "alice-gh" },
+        { date: "2026-08-03", github: "bob-gh" },
+        { date: "2026-08-04", github: "bob-gh" },
+      ],
+    };
+    const submission = parseSubmissionBody(
+      bodyFor(
+        { type: "single", text: "Friday filing." },
+        "2026-07-31",
+        "alice-gh",
+      ),
+    );
+    expect(
+      validateSubmission({
+        issue: issue("body"),
+        submission,
+        team,
+        schedule: scheduleWithMonday,
+        archive: emptyArchive,
+      }),
+    ).toMatchObject({
+      accepted: true,
+      nextScheduleEntry: { date: "2026-08-04" },
     });
   });
 
@@ -353,7 +405,7 @@ describe("archive and suggestions", () => {
       writeFile(schedulePath, `${JSON.stringify(schedule, null, 2)}\n`),
       writeFile(
         issuePath,
-        `${JSON.stringify(issue(bodyFor({ type: "single", text: "Accepted." }, "2026-07-27", "alice-gh")), null, 2)}\n`,
+        `${JSON.stringify(issue(bodyFor({ type: "single", text: "Accepted." }, "2026-07-28", "alice-gh")), null, 2)}\n`,
       ),
     ]);
 
@@ -374,7 +426,7 @@ describe("archive and suggestions", () => {
     expect(JSON.parse(await readFile(resultPath, "utf8"))).toMatchObject({
       accepted: true,
       nextScheduleUpdated: true,
-      nextDate: "2026-07-28",
+      nextDate: "2026-07-29",
       nextGithub: "alice-gh",
     });
     expect(
@@ -383,7 +435,7 @@ describe("archive and suggestions", () => {
     expect(
       JSON.parse(await readFile(schedulePath, "utf8")).entries.at(-1),
     ).toEqual({
-      date: "2026-07-28",
+      date: "2026-07-29",
       github: "alice-gh",
     });
   });

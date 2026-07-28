@@ -18,3 +18,8 @@ export function formatDisplayDate(date: string): string {
     year: "numeric",
   }).format(new Date(`${date}T12:00:00.000Z`));
 }
+
+export function isJokeDay(date: string): boolean {
+  const day = new Date(`${date}T12:00:00.000Z`).getUTCDay();
+  return day >= 2 && day <= 5;
+}

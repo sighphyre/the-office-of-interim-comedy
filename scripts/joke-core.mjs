@@ -9,6 +9,7 @@ export const START_MARKER = "<!-- daily-joke-submission:start -->";
 export const END_MARKER = "<!-- daily-joke-submission:end -->";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const JOKE_DAY_UTC_DAYS = new Set([2, 3, 4, 5]);
 
 export async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
@@ -31,6 +32,12 @@ export function isValidDateString(date) {
   if (!DATE_RE.test(date)) return false;
   const parsed = new Date(`${date}T00:00:00.000Z`);
   return parsed.toISOString().slice(0, 10) === date;
+}
+
+export function isJokeDay(date) {
+  if (!isValidDateString(date)) return false;
+  const day = new Date(`${date}T12:00:00.000Z`).getUTCDay();
+  return JOKE_DAY_UTC_DAYS.has(day);
 }
 
 export function normalizeLineEndings(value) {
@@ -104,6 +111,9 @@ export function validateJokeShape(submission) {
   }
   if (!isValidDateString(submission.date ?? "")) {
     return "The submitted date is missing or invalid.";
+  }
+  if (!isJokeDay(submission.date)) {
+    return "Joke of the day is only active Tuesday through Friday.";
   }
   if (submission.type !== "single" && submission.type !== "setup-punchline") {
     return "The submitted joke type is invalid.";
@@ -216,7 +226,9 @@ export function validateSubmission({
 
     nextScheduleEntry =
       schedule.entries
-        .filter((entry) => entry.date > submission.date)
+        .filter(
+          (entry) => entry.date > submission.date && isJokeDay(entry.date),
+        )
         .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
     if (!nextScheduleEntry) {
       return {

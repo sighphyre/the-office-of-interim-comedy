@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import archiveData from "../data/archive.json";
 import scheduleData from "../data/schedule.json";
 import teamData from "../data/team.json";
-import { formatDisplayDate, todayInTimezone } from "./lib/dates";
+import { formatDisplayDate, isJokeDay, todayInTimezone } from "./lib/dates";
 import { repository } from "./lib/config";
 import { buildIssueUrl } from "./lib/submission";
 import {
@@ -49,7 +49,7 @@ function App() {
   );
   const nextScheduleEntry =
     scheduleData.entries
-      .filter((entry) => entry.date > today)
+      .filter((entry) => entry.date > today && isJokeDay(entry.date))
       .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
   const [selectedCategories, setSelectedCategories] = useState<
     JokeApiCategory[]
