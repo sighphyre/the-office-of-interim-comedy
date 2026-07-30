@@ -19,6 +19,15 @@
       "recordedAt": "2026-07-29T07:22:20.727Z",
       "setup": "What do you call a cow with no legs?",
       "punchline": "Ground beef."
+    },
+    {
+      "date": "2026-07-30",
+      "github": "sebastian-bury",
+      "name": "Sebastian Bury",
+      "type": "single",
+      "issueNumber": 7,
+      "recordedAt": "2026-07-30T09:20:55.523Z",
+      "text": "I adopted a dog from a locksmith, all went great until we got home. Then the dog immediately made a bold for the door!"
     }
   ]
 }
