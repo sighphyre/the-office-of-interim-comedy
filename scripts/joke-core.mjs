@@ -40,6 +40,21 @@ export function isJokeDay(date) {
   return JOKE_DAY_UTC_DAYS.has(day);
 }
 
+export function addDays(date, days) {
+  if (!isValidDateString(date)) return null;
+  const parsed = new Date(`${date}T12:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
+}
+
+export function nextJokeDayAfter(date) {
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const candidate = addDays(date, offset);
+    if (isJokeDay(candidate)) return candidate;
+  }
+  return null;
+}
+
 export function normalizeLineEndings(value) {
   return String(value ?? "")
     .replace(/\r\n/g, "\n")
@@ -224,18 +239,19 @@ export function validateSubmission({
       };
     }
 
-    nextScheduleEntry =
-      schedule.entries
-        .filter(
-          (entry) => entry.date > submission.date && isJokeDay(entry.date),
-        )
-        .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
-    if (!nextScheduleEntry) {
+    const nextJokeDay = nextJokeDayAfter(submission.date);
+    if (!nextJokeDay) {
       return {
         accepted: false,
-        message: "There is no later schedule entry to update.",
+        message: "No next active joke day could be found.",
       };
     }
+    nextScheduleEntry = schedule.entries.find(
+      (entry) => entry.date === nextJokeDay,
+    ) ?? {
+      date: nextJokeDay,
+      github: null,
+    };
   }
 
   return {
@@ -261,12 +277,20 @@ export function updateNextScheduleEntry(
   }
 
   let changed = false;
+  let found = false;
   const entries = schedule.entries.map((entry) => {
     if (entry.date !== nextScheduleEntry.date) return entry;
+    found = true;
     if (entry.github === nextGithub) return entry;
     changed = true;
     return { ...entry, github: nextGithub };
   });
+
+  if (!found) {
+    changed = true;
+    entries.push({ date: nextScheduleEntry.date, github: nextGithub });
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+  }
 
   return {
     schedule: { ...schedule, entries },

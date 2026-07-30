@@ -88,7 +88,7 @@ Issue format version `2` supports this optional machine-readable marker:
 <!-- next-github:sighphyre -->
 ```
 
-When present, `scripts/record-joke.mjs` updates the next configured Tuesday-Friday schedule entry after the submitted date. It does not compute a calendar rotation, so leave days and holidays still follow the explicit schedule file.
+When present, `scripts/record-joke.mjs` sets the next active joke day&apos;s jester. Active joke days are Tuesday through Friday, so Thursday targets Friday and Friday targets the following Tuesday. If that date already exists in `data/schedule.json`, it updates the entry. If it is missing, it appends a new schedule entry.
 
 ## Contributing
 

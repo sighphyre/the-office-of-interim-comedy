@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import archiveData from "../data/archive.json";
 import scheduleData from "../data/schedule.json";
 import teamData from "../data/team.json";
-import { formatDisplayDate, isJokeDay, todayInTimezone } from "./lib/dates";
+import {
+  formatDisplayDate,
+  nextJokeDayAfter,
+  todayInTimezone,
+} from "./lib/dates";
 import { repository } from "./lib/config";
 import { buildIssueUrl } from "./lib/submission";
 import {
@@ -47,10 +51,7 @@ function App() {
     archiveData.entries as ArchiveEntry[],
     today,
   );
-  const nextScheduleEntry =
-    scheduleData.entries
-      .filter((entry) => entry.date > today && isJokeDay(entry.date))
-      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
+  const nextJokeDay = nextJokeDayAfter(today);
   const [selectedCategories, setSelectedCategories] = useState<
     JokeApiCategory[]
   >([...jokeApiCategories]);
@@ -277,36 +278,26 @@ function App() {
                 </div>
                 <div className="custom-inline">
                   <h3>Next temporary jester</h3>
-                  {nextScheduleEntry ? (
-                    <>
-                      <p className="note">
-                        Optional. Sets the assignee for{" "}
-                        {formatDisplayDate(nextScheduleEntry.date)} when this
-                        joke is recorded.
-                      </p>
-                      <label>
-                        Next day person
-                        <select
-                          value={nextJesterGithub}
-                          onChange={(event) =>
-                            setNextJesterGithub(event.target.value)
-                          }
-                        >
-                          <option value="">No change</option>
-                          {teamData.members.map((member) => (
-                            <option value={member.github} key={member.github}>
-                              {member.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </>
-                  ) : (
-                    <p className="note">
-                      No later schedule entry exists, so no next jester can be
-                      set.
-                    </p>
-                  )}
+                  <p className="note">
+                    Optional. Sets the assignee for{" "}
+                    {formatDisplayDate(nextJokeDay)} when this joke is recorded.
+                  </p>
+                  <label>
+                    Next joke day person
+                    <select
+                      value={nextJesterGithub}
+                      onChange={(event) =>
+                        setNextJesterGithub(event.target.value)
+                      }
+                    >
+                      <option value="">No change</option>
+                      {teamData.members.map((member) => (
+                        <option value={member.github} key={member.github}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
                 <p className="note">
                   GitHub will open in a new page. Submit the issue there to

@@ -320,14 +320,10 @@ describe("archive and suggestions", () => {
     });
   });
 
-  it("skips Monday when finding the next schedule entry", () => {
-    const scheduleWithMonday = {
+  it("sets Tuesday as the next joke day after Friday", () => {
+    const fridaySchedule = {
       timezone: "Africa/Johannesburg",
-      entries: [
-        { date: "2026-07-31", github: "alice-gh" },
-        { date: "2026-08-03", github: "bob-gh" },
-        { date: "2026-08-04", github: "bob-gh" },
-      ],
+      entries: [{ date: "2026-07-31", github: "alice-gh" }],
     };
     const submission = parseSubmissionBody(
       bodyFor(
@@ -341,13 +337,32 @@ describe("archive and suggestions", () => {
         issue: issue("body"),
         submission,
         team,
-        schedule: scheduleWithMonday,
+        schedule: fridaySchedule,
         archive: emptyArchive,
       }),
     ).toMatchObject({
       accepted: true,
       nextScheduleEntry: { date: "2026-08-04" },
     });
+  });
+
+  it("creates the next joke day schedule entry when it is missing", () => {
+    const result = updateNextScheduleEntry(
+      {
+        timezone: "Africa/Johannesburg",
+        entries: [{ date: "2026-07-30", github: "alice-gh" }],
+      },
+      { date: "2026-07-31", github: null },
+      "bob-gh",
+    );
+    expect(result).toMatchObject({
+      changed: true,
+      nextDate: "2026-07-31",
+    });
+    expect(result.schedule.entries).toEqual([
+      { date: "2026-07-30", github: "alice-gh" },
+      { date: "2026-07-31", github: "bob-gh" },
+    ]);
   });
 
   it("does not modify the archive after rejection", async () => {
@@ -438,5 +453,103 @@ describe("archive and suggestions", () => {
       date: "2026-07-29",
       github: "alice-gh",
     });
+  });
+
+  it("updates the archive and creates the next joke day after acceptance", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "interim-comedy-"));
+    const archivePath = join(dir, "archive.json");
+    const issuePath = join(dir, "issue.json");
+    const resultPath = join(dir, "result.json");
+    const teamPath = join(dir, "team.json");
+    const schedulePath = join(dir, "schedule.json");
+    const archive = { entries: [] };
+    const thursdaySchedule = {
+      timezone: "Africa/Johannesburg",
+      entries: [{ date: "2026-07-30", github: "alice-gh" }],
+    };
+
+    await Promise.all([
+      writeFile(archivePath, `${JSON.stringify(archive, null, 2)}\n`),
+      writeFile(teamPath, `${JSON.stringify(team, null, 2)}\n`),
+      writeFile(schedulePath, `${JSON.stringify(thursdaySchedule, null, 2)}\n`),
+      writeFile(
+        issuePath,
+        `${JSON.stringify(issue(bodyFor({ type: "single", text: "Accepted." }, "2026-07-30", "bob-gh")), null, 2)}\n`,
+      ),
+    ]);
+
+    await execFileAsync("node", [
+      "scripts/record-joke.mjs",
+      "--issue",
+      issuePath,
+      "--result",
+      resultPath,
+      "--archive",
+      archivePath,
+      "--team",
+      teamPath,
+      "--schedule",
+      schedulePath,
+    ]);
+
+    expect(JSON.parse(await readFile(resultPath, "utf8"))).toMatchObject({
+      accepted: true,
+      nextScheduleUpdated: true,
+      nextDate: "2026-07-31",
+      nextGithub: "bob-gh",
+    });
+    expect(JSON.parse(await readFile(schedulePath, "utf8")).entries).toEqual([
+      { date: "2026-07-30", github: "alice-gh" },
+      { date: "2026-07-31", github: "bob-gh" },
+    ]);
+  });
+
+  it("updates the archive and creates Tuesday after a Friday acceptance", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "interim-comedy-"));
+    const archivePath = join(dir, "archive.json");
+    const issuePath = join(dir, "issue.json");
+    const resultPath = join(dir, "result.json");
+    const teamPath = join(dir, "team.json");
+    const schedulePath = join(dir, "schedule.json");
+    const archive = { entries: [] };
+    const fridaySchedule = {
+      timezone: "Africa/Johannesburg",
+      entries: [{ date: "2026-07-31", github: "alice-gh" }],
+    };
+
+    await Promise.all([
+      writeFile(archivePath, `${JSON.stringify(archive, null, 2)}\n`),
+      writeFile(teamPath, `${JSON.stringify(team, null, 2)}\n`),
+      writeFile(schedulePath, `${JSON.stringify(fridaySchedule, null, 2)}\n`),
+      writeFile(
+        issuePath,
+        `${JSON.stringify(issue(bodyFor({ type: "single", text: "Accepted." }, "2026-07-31", "bob-gh")), null, 2)}\n`,
+      ),
+    ]);
+
+    await execFileAsync("node", [
+      "scripts/record-joke.mjs",
+      "--issue",
+      issuePath,
+      "--result",
+      resultPath,
+      "--archive",
+      archivePath,
+      "--team",
+      teamPath,
+      "--schedule",
+      schedulePath,
+    ]);
+
+    expect(JSON.parse(await readFile(resultPath, "utf8"))).toMatchObject({
+      accepted: true,
+      nextScheduleUpdated: true,
+      nextDate: "2026-08-04",
+      nextGithub: "bob-gh",
+    });
+    expect(JSON.parse(await readFile(schedulePath, "utf8")).entries).toEqual([
+      { date: "2026-07-31", github: "alice-gh" },
+      { date: "2026-08-04", github: "bob-gh" },
+    ]);
   });
 });
