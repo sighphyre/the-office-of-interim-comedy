@@ -22,7 +22,7 @@ import {
 } from "./lib/jokeApi";
 import type { ArchiveEntry, Joke } from "./lib/types";
 
-const textLimit = 500;
+const textLimit = 1000;
 type View = "today" | "schedule" | "archive";
 
 function viewFromHash(): View {
