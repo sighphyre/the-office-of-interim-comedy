@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import {
+  MAX_TEXT,
   parseSubmissionBody,
   sortArchiveEntries,
   todayInTimezone,
@@ -205,7 +206,7 @@ describe("submission validation", () => {
 
   it("rejects oversized fields", () => {
     const submission = parseSubmissionBody(
-      bodyFor({ type: "single", text: "x".repeat(501) }),
+      bodyFor({ type: "single", text: "x".repeat(MAX_TEXT + 1) }),
     );
     expect(
       validateSubmission({
