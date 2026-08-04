@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 export const FORMAT_VERSION = "2";
 export const SUPPORTED_FORMAT_VERSIONS = new Set(["1", "2"]);
-export const MAX_TEXT = 500;
+export const MAX_TEXT = 1000;
 export const MAX_SETUP = 300;
 export const MAX_PUNCHLINE = 300;
 export const START_MARKER = "<!-- daily-joke-submission:start -->";
