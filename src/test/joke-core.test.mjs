@@ -57,6 +57,34 @@ ${content}
 <!-- daily-joke-submission:end -->`;
 }
 
+function issueFormBody({
+  date = "2026-08-06",
+  type = "setup-punchline",
+  jokeBody = "What do you call an alligator with a vest?\n\nAn investigator.",
+  nextGithub = "bob-gh",
+} = {}) {
+  return `### Submission date
+
+${date}
+
+### Joke type
+
+${type}
+
+### Joke body
+
+${jokeBody}
+
+### Optional next temporary jester
+
+${nextGithub}
+
+### Confirmation
+
+- [x] I understand this issue will be validated by the Department of Joke Continuity.
+`;
+}
+
 describe("timezone helper", () => {
   it("calculates today in the configured timezone", () => {
     expect(
@@ -128,6 +156,34 @@ describe("submission parsing", () => {
     expect(parsed).toMatchObject({
       version: "2",
       nextGithub: "bob-gh",
+    });
+  });
+
+  it("parses a GitHub Issue Form setup-punchline submission", () => {
+    expect(parseSubmissionBody(issueFormBody())).toEqual({
+      version: "2",
+      date: "2026-08-06",
+      type: "setup-punchline",
+      text: "",
+      setup: "What do you call an alligator with a vest?",
+      punchline: "An investigator.",
+      nextGithub: "bob-gh",
+    });
+  });
+
+  it("parses a GitHub Issue Form single joke submission without a next jester", () => {
+    expect(
+      parseSubmissionBody(
+        issueFormBody({
+          type: "single",
+          jokeBody: "Debugging: Removing the needles from the haystack.",
+          nextGithub: "_No response_",
+        }),
+      ),
+    ).toMatchObject({
+      type: "single",
+      text: "Debugging: Removing the needles from the haystack.",
+      nextGithub: "",
     });
   });
 });
@@ -236,6 +292,27 @@ describe("submission validation", () => {
     ).toMatchObject({
       accepted: true,
       nextScheduleEntry: { date: "2026-07-29" },
+      nextTeamMember: { github: "bob-gh" },
+    });
+  });
+
+  it("accepts a valid setup-punchline Issue Form submission", () => {
+    const issueFormSchedule = {
+      timezone: "Africa/Johannesburg",
+      entries: [{ date: "2026-08-06", github: "alice-gh" }],
+    };
+    const submission = parseSubmissionBody(issueFormBody());
+    expect(
+      validateSubmission({
+        issue: issue("body"),
+        submission,
+        team,
+        schedule: issueFormSchedule,
+        archive: emptyArchive,
+      }),
+    ).toMatchObject({
+      accepted: true,
+      nextScheduleEntry: { date: "2026-08-07" },
       nextTeamMember: { github: "bob-gh" },
     });
   });

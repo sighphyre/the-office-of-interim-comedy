@@ -65,12 +65,91 @@ export function hasRawHtml(value) {
   return /<\s*\/?\s*[a-z][^>]*>/i.test(value);
 }
 
+function cleanIssueFormValue(value) {
+  const cleaned = (value ?? "").trim();
+  return cleaned === "_No response_" ? "" : cleaned;
+}
+
+function parseIssueFormSections(body) {
+  const sections = {};
+  let current = null;
+  for (const line of body.split("\n")) {
+    const heading = line.match(/^###\s+(.+?)\s*$/);
+    if (heading) {
+      current = heading[1].trim();
+      sections[current] = "";
+      continue;
+    }
+    if (current) {
+      sections[current] += `${line}\n`;
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(sections).map(([key, value]) => [
+      key,
+      cleanIssueFormValue(value),
+    ]),
+  );
+}
+
+function splitSetupPunchline(jokeBody) {
+  const paragraphs = jokeBody
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  if (paragraphs.length >= 2) {
+    return {
+      setup: paragraphs[0],
+      punchline: paragraphs.slice(1).join("\n\n"),
+    };
+  }
+
+  const lines = jokeBody
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    setup: lines[0] ?? "",
+    punchline: lines.slice(1).join("\n"),
+  };
+}
+
+export function parseIssueFormBody(body) {
+  const sections = parseIssueFormSections(normalizeLineEndings(body));
+  const date = sections["Submission date"];
+  const type = sections["Joke type"];
+  const jokeBody = sections["Joke body"];
+  if (!date || !type || !jokeBody) {
+    throw new Error("The issue body lacks the expected daily joke markers.");
+  }
+
+  const base = {
+    date,
+    type,
+    version: FORMAT_VERSION,
+    text: "",
+    setup: "",
+    punchline: "",
+    nextGithub: sections["Optional next temporary jester"] ?? "",
+  };
+
+  if (type === "single") {
+    return { ...base, text: jokeBody };
+  }
+
+  if (type === "setup-punchline") {
+    return { ...base, ...splitSetupPunchline(jokeBody) };
+  }
+
+  return base;
+}
+
 export function parseSubmissionBody(body) {
   const normalized = normalizeLineEndings(body);
   const start = normalized.indexOf(START_MARKER);
   const end = normalized.indexOf(END_MARKER);
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error("The issue body lacks the expected daily joke markers.");
+    return parseIssueFormBody(normalized);
   }
   if (normalized.indexOf(START_MARKER, start + START_MARKER.length) !== -1) {
     throw new Error("The issue body contains more than one start marker.");
