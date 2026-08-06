@@ -46,6 +46,16 @@
       "issueNumber": 10,
       "recordedAt": "2026-08-05T08:17:48.887Z",
       "text": "A developer walks into a bar and orders 1 beer, then 10 beers, then 0 beers, then 999 beers.\n\nThe bartender asks, \"Are you testing me?\"\n\nThe developer replies, \"No, QA is coming in next.\""
+    },
+    {
+      "date": "2026-08-06",
+      "github": "ppicom",
+      "name": "Pere Picó ",
+      "type": "setup-punchline",
+      "issueNumber": 11,
+      "recordedAt": "2026-08-06T16:01:51.472Z",
+      "setup": "What do you call an alligator with a vest?",
+      "punchline": "An investigator."
     }
   ]
 }
